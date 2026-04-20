@@ -20,11 +20,12 @@ class CoordinateDataset(Dataset):
         """
         Strong augmentation cho sign language coordinates
         Chỉ augment features, KHÔNG thay đổi semantic của signs
+        x: (T, D) - single sample, not batch
         """
         if not self.is_train:
             return x
 
-        B, T, D = x.shape
+        T, D = x.shape
 
         # 1. Scaling (nhẹ hơn, 5%)
         scale = random.uniform(0.95, 1.05)
@@ -38,19 +39,11 @@ class CoordinateDataset(Dataset):
         if T > 20 and random.random() < 0.3:
             num_drop = max(1, int(T * 0.05))
             drop_indices = random.sample(range(T), num_drop)
-            x[:, drop_indices, :] = 0
+            x[drop_indices, :] = 0
 
         # 4. Small shift (dịch chuyển tọa độ)
-        shift = (torch.rand(1, 1, D) - 0.5) * 0.02
+        shift = (torch.rand(1, D) - 0.5) * 0.02
         x = x + shift
-
-        # 5. Time warping (thay đổi tốc độ signing) - chỉ cho features
-        if T > 30 and random.random() < 0.2:
-            warp_factor = random.uniform(0.85, 1.15)
-            new_T = int(T * warp_factor)
-            if new_T > 10 and new_T < T * 2:
-                indices = torch.linspace(0, T - 1, new_T).long().clamp(0, T - 1)
-                x = x[:, indices, :]
 
         return x
 
@@ -61,31 +54,29 @@ class CoordinateDataset(Dataset):
         - Velocity (vận tốc)
         - Acceleration (gia tốc)
         - Jerk (thay đổi gia tốc) - quan trọng cho sign language!
-        - Motion magnitude (tốc độ chuyển động tổng)
 
-        Input: (B, T, 2212) - raw coordinates
-        Output: (B, T, 6636) - enhanced features (2212 * 3)
+        Input: (T, 2212) - raw coordinates per sample
+        Output: (T, 8848) - enhanced features (2212 * 4)
         """
-        B, T, D = x.shape
+        T, D = x.shape
 
         # Position (tọa độ gốc)
         pos = x
 
         # Velocity: v[t] = x[t] - x[t-1]
         vel = torch.zeros_like(x)
-        vel[:, 1:, :] = x[:, 1:, :] - x[:, :-1, :]
+        vel[1:, :] = x[1:, :] - x[:-1, :]
 
         # Acceleration: a[t] = v[t] - v[t-1]
         acc = torch.zeros_like(x)
-        acc[:, 1:, :] = vel[:, 1:, :] - vel[:, :-1, :]
+        acc[1:, :] = vel[1:, :] - vel[:-1, :]
 
         # Jerk (thay đổi gia tốc) - rất quan trọng cho sign language
-        # Jerk = a[t] - a[t-1]
         jerk = torch.zeros_like(x)
-        jerk[:, 1:, :] = acc[:, 1:, :] - acc[:, :-1, :]
+        jerk[1:, :] = acc[1:, :] - acc[:-1, :]
 
         # Concatenate all
-        features = torch.cat([pos, vel, acc, jerk], dim=-1)  # (B, T, D*4)
+        features = torch.cat([pos, vel, acc, jerk], dim=-1)  # (T, D*4)
 
         # Chiều dài = 2212 * 4 = 8848
         return features
