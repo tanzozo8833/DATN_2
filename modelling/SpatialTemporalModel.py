@@ -4,9 +4,7 @@ import torch.nn.functional as F
 
 
 class SpatialConvBlock(nn.Module):
-    """Spatial convolution block - trích xuất features từ tọa độ 3D"""
-
-    def __init__(self, in_channels, out_channels, kernel_size=5, dropout=0.1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, dropout=0.1):
         super().__init__()
         self.conv = nn.Conv1d(
             in_channels, out_channels, kernel_size, padding=kernel_size // 2
@@ -16,7 +14,6 @@ class SpatialConvBlock(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        # x: (B, C, T)
         x = self.conv(x)
         x = self.bn(x)
         x = self.relu(x)
@@ -25,80 +22,20 @@ class SpatialConvBlock(nn.Module):
 
 
 class SpatialFeatureExtractor(nn.Module):
-    """Trích xuất spatial features từ 553 landmarks (face, hands, pose)"""
-
     def __init__(self, input_dim=6636, hidden_dim=512, dropout=0.2):
         super().__init__()
 
-        # Landmark indices trong MediaPipe:
-        # Face: 0-467 (468 landmarks)
-        # Left Hand: 468-488 (21 landmarks)
-        # Right Hand: 489-509 (21 landmarks)
-        # Pose: 510-542 (33 landmarks)
-
-        self.face_dim = 468 * 3
-        self.hand_dim = 42 * 3  # 21 landmarks * 3 coords (both hands)
-        self.pose_dim = 33 * 3
-
-        # Face branch
-        self.face_conv = nn.Sequential(
-            SpatialConvBlock(self.face_dim, 256, kernel_size=5, dropout=dropout),
-            SpatialConvBlock(256, 128, kernel_size=3, dropout=dropout),
-            SpatialConvBlock(128, 64, kernel_size=3, dropout=dropout),
-        )
-
-        # Hand branch (left + right combined)
-        self.hand_conv = nn.Sequential(
-            SpatialConvBlock(self.hand_dim, 256, kernel_size=3, dropout=dropout),
-            SpatialConvBlock(256, 128, kernel_size=3, dropout=dropout),
-            SpatialConvBlock(128, 64, kernel_size=3, dropout=dropout),
-        )
-
-        # Pose branch
-        self.pose_conv = nn.Sequential(
-            SpatialConvBlock(self.pose_dim, 128, kernel_size=3, dropout=dropout),
-            SpatialConvBlock(128, 64, kernel_size=3, dropout=dropout),
-        )
-
-        # Fusion layer
-        total_features = 64 + 64 + 64  # face + hand + pose
-        self.fusion = nn.Sequential(
-            nn.Conv1d(total_features, hidden_dim, kernel_size=1),
-            nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
+        self.conv_layers = nn.Sequential(
+            SpatialConvBlock(input_dim, 512, kernel_size=5, dropout=dropout),
+            SpatialConvBlock(512, 512, kernel_size=3, dropout=dropout),
+            SpatialConvBlock(512, hidden_dim, kernel_size=3, dropout=dropout),
         )
 
     def forward(self, x):
-        """
-        x: (B, T, 6636) - [pos, vel, acc] concatenated
-        Returns: (B, T, hidden_dim)
-        """
-        B, T, _ = x.shape
-
-        # Extract different body parts
-        # Face: first 468*3
-        x_face = x[:, :, : self.face_dim]  # (B, T, 1404)
-        # Hands: next 42*3
-        x_hand = x[:, :, self.face_dim : self.face_dim + self.hand_dim]  # (B, T, 126)
-        # Pose: remaining
-        x_pose = x[:, :, self.face_dim + self.hand_dim :]  # (B, T, 99)
-
-        # Reshape for Conv1d: (B, C, T)
-        x_face = x_face.transpose(1, 2)
-        x_hand = x_hand.transpose(1, 2)
-        x_pose = x_pose.transpose(1, 2)
-
-        # Apply convolutions
-        f_face = self.face_conv(x_face)  # (B, 64, T)
-        f_hand = self.hand_conv(x_hand)  # (B, 64, T)
-        f_pose = self.pose_conv(x_pose)  # (B, 64, T)
-
-        # Concatenate and fuse
-        fused = torch.cat([f_face, f_hand, f_pose], dim=1)  # (B, 192, T)
-        out = self.fusion(fused)  # (B, hidden_dim, T)
-
-        return out.transpose(1, 2)  # (B, T, hidden_dim)
+        x = x.transpose(1, 2)
+        x = self.conv_layers(x)
+        x = x.transpose(1, 2)
+        return x
 
 
 class TemporalDownsampling(nn.Module):

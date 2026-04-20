@@ -14,7 +14,7 @@ from tqdm import tqdm
 from dataset.CoordinateDataset import CoordinateDataset, collate_fn
 from modelling.SpatialTemporalModel import SpatialTemporalModel
 from modelling.Tokenizer import GlossTokenizer
-from utils.recognition import greedy_decoder
+from utils.recognition import ctc_beam_search_decoder
 
 
 def validate(model, val_loader, device, tokenizer):
@@ -39,7 +39,9 @@ def validate(model, val_loader, device, tokenizer):
             # Use greedy decoder for faster validation
             logits_transposed = logits.transpose(0, 1)
             for i in range(logits_transposed.size(0)):
-                pred_str = greedy_decoder(logits_transposed[i], tokenizer)
+                pred_str = ctc_beam_search_decoder(
+                    logits_transposed[i], tokenizer, beam_size=10
+                )
                 gt_str = tokenizer.decode(batch["label"][i].numpy())
                 all_preds.append(pred_str)
                 all_gt.append(gt_str)
@@ -66,7 +68,7 @@ def train():
 
     wandb.init(
         project="SignLanguage_DATN",
-        name="SpatialTemporal_CNN_LSTM_Attention",
+        name="SpatialTemporal_CNN_LSTM_BeamSearch",
         config=cfg,
     )
 

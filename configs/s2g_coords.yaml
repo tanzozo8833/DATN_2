@@ -6,8 +6,8 @@ data:
   coords_root: "C:/Users/TanHD6/Documents/DATN/phoenix-npy_2"
 
 model:
-  # Input: 2212 coords * 4 features (pos, vel, acc, jerk) = 8848
-  input_dim: 8848
+  # Input: 2212 coords * 3 features (pos, vel, acc) = 6636
+  input_dim: 6636
   hidden_dim: 512
   num_lstm_layers: 3
   num_classes: 1124
