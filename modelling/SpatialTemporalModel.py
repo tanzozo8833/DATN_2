@@ -151,19 +151,12 @@ class SpatialTemporalModel(nn.Module):
         self.hidden_dim = hidden_dim
 
     def forward(self, x, input_lens):
-        """
-        x: (B, T, 6636) - batch of coordinate sequences
-        input_lens: (B,) - actual lengths before padding
-        Returns: (T, B, num_classes) - logits for CTC
-        """
         B, T, _ = x.size()
 
-        # 1. Spatial CNN
-        x = self.spatial_extractor(x)  # (B, T, hidden_dim)
+        x = self.spatial_extractor(x)
 
-        # 2. Create padding mask for attention
         if self.use_downsampling:
-            # Adjust lengths after downsampling
+            x = self.temporal_down(x)
             new_lens = (input_lens + 1) // 2
         else:
             new_lens = input_lens
@@ -173,18 +166,9 @@ class SpatialTemporalModel(nn.Module):
             B, max_len
         ) >= new_lens.unsqueeze(1)
 
-        # 3. Temporal Downsampling
-        if self.use_downsampling:
-            x = self.temporal_down(x)  # (B, T//2, hidden_dim)
-
-        # 4. Temporal Encoder (BiLSTM + Attention)
         x = self.temporal_encoder(x, key_padding_mask=mask)
-
-        # 5. Transformer for global context
         x = self.transformer_encoder(x, src_key_padding_mask=mask)
-
-        # 6. Classification
-        logits = self.classifier(x)  # (B, T, num_classes)
+        logits = self.classifier(x)
 
         # CTC requires: (T, B, C)
         return logits.transpose(0, 1)
