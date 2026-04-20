@@ -1,20 +1,22 @@
 data:
-  # Đường dẫn tới các file pkl (chú thích)
+  # Đường dẫn tương đối - sử dụng cho mọi máy
   train_pkl: "C:/Users/TanHD6/Documents/DATN/data/phoenix-2014t/phoenix-2014t_cleaned.train"
   dev_pkl: "C:/Users/TanHD6/Documents/DATN/data/phoenix-2014t/phoenix-2014t_cleaned.dev"
-  # Đường dẫn tới thư mục chứa các file CSV tọa độ
-  # Đường dẫn tới từ điển
   gloss_dict: "C:/Users/TanHD6/Documents/DATN/data/phoenix-2014t/gloss2ids.pkl"
   coords_root: "C:/Users/TanHD6/Documents/DATN/phoenix-npy_2"
+
 model:
-  input_dim: 6636    # 553 điểm * 4 (x,y,z,v) -> 6636 do đã them vector
-  hidden_dim: 512    # Kích thước không gian đặc trưng
-  nhead: 8           # Số luồng chú ý trong Transformer
-  num_layers: 6      # Số lớp Transformer (Để 4 cho nhẹ máy)
-  num_classes: 1124  # Tổng số từ Gloss
-  dropout: 0.2     # Tỷ lệ dropout để tránh overfitting
+  # Input: 2212 coords * 4 features (pos, vel, acc, jerk) = 8848
+  input_dim: 8848
+  hidden_dim: 512
+  num_lstm_layers: 3
+  num_classes: 1124
+  dropout: 0.2
+  use_downsampling: true
+  downsample_stride: 2
+
 training:
-  batch_size: 32      # Bắt đầu với 4 để tránh lỗi bộ nhớ, nếu mượt bạn có thể tăng lên 8, 16
-  learning_rate: 0.0001
-  epochs: 60
+  batch_size: 16
+  learning_rate: 0.001
+  epochs: 80
   save_path: "C:/Users/TanHD6/Documents/DATN/checkpoints_3"
