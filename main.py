@@ -20,8 +20,8 @@ def main():
     train_params = {
         'device': 'cuda' if torch.cuda.is_available() else 'cpu',
         'lr': 1e-4,
-        'epochs': 100,
-        'batch_size': 16,
+        'epochs': 150,
+        'batch_size': 8,
         'project_name': 'Light-MSKA-SLR'
     }
 

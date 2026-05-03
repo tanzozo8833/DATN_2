@@ -11,7 +11,6 @@ class SpatialAttention(nn.Module):
 
         self.qkv = nn.Conv2d(in_channels, in_channels * 3, kernel_size=1)
         self.proj = nn.Conv2d(in_channels, in_channels, kernel_size=1)
-        self.bn = nn.BatchNorm2d(in_channels)
 
     def forward(self, x):
         B, C, T, N = x.shape
@@ -23,8 +22,8 @@ class SpatialAttention(nn.Module):
         v = v.view(B, self.num_heads, self.head_dim, T, N).permute(0, 1, 3, 4, 2)
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn.softmax(dim=-1)
 
-        out = (attn @ v).permute(0, 1, 4, 2, 3).reshape(B, C, T, N)
+        out = (attn @ v).permute(0, 1, 3, 4, 2).reshape(B, C, T, N)
         out = self.proj(out)
-        out = self.bn(out)
         return out + x
