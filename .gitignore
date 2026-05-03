@@ -37,3 +37,11 @@ visualizations/
 weights/
 
 output_full_tensor.txt
+
+val_results.txt
+
+compare.md
+
+
+Kết quả Epoch.txt
+MSKA.pdf

@@ -4,8 +4,16 @@ import torch.optim as optim
 import torch.nn.functional as F
 from tqdm import tqdm
 import os
-import wandb 
+import wandb
 from src.utils.metrics import calculate_wer
+
+try:
+    from pyctcdecode import build_ctc_decoder
+    CTC_AVAILABLE = True
+except ImportError:
+    CTC_AVAILABLE = False
+    build_ctc_decoder = None
+
 
 class SLRTrainer:
     def __init__(self, model, train_loader, dev_loader, augmentor, config, gloss_dict): # Thêm gloss_dict vào đây
@@ -20,28 +28,68 @@ class SLRTrainer:
 
         self.ctc_loss = nn.CTCLoss(blank=0, reduction='mean', zero_infinity=True)
         self.distill_loss = nn.KLDivLoss(reduction='batchmean')
-        
-        self.optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=1e-4)
-        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=config['epochs'])
+        if CTC_AVAILABLE:
+            self.beam_decoder = build_ctc_decoder(
+                list(self.gloss_dict.keys()),
+                model_path=None,
+                alpha=0, beta=0,
+                cutoff_top_n=40,
+                cutoff_prob=1.0,
+                beam_width=10,
+                num_processes=4,
+                blank_id=0,
+                log_probs_input=True
+            )
+        else:
+            self.beam_decoder = None
+        self.optimizer = optim.AdamW(
+            model.parameters(),
+            lr=config['lr'],
+            weight_decay=1e-2
+        )
+        self.scheduler = optim.lr_scheduler.OneCycleLR(
+            self.optimizer,
+            max_lr=config['lr'],
+            total_steps=config['epochs'] * len(train_loader),
+            pct_start=0.3,
+            anneal_strategy='cos'
+        )
 
         wandb.init(project="Light-MSKA-SLR", config=config)
-
+    def decode_beam(self, logits):
+        if self.beam_decoder is None:
+            return self.decode_greedy(logits)
+        log_probs = F.log_softmax(logits, dim=-1)
+        beam_results, beam_scores, timesteps, out_lens = self.beam_decoder.decode(log_probs)
+        batch_predictions = []
+        for i in range(beam_results.size(0)):
+            best_beam = beam_results[i][0][:out_lens[i][0]]
+            batch_predictions.append(best_beam.tolist())
+        return batch_predictions
+    
     def compute_loss(self, outputs, targets, input_lengths, target_lengths):
         total_ctc_loss = 0
         all_logits = []
         stream_names = ['body', 'left_hand', 'right_hand', 'mouth', 'face', 'fuse']
+        output_lengths = outputs.get('output_lengths', [])
 
-        for name in stream_names:
+        for idx, name in enumerate(stream_names):
             logits = outputs[name]
             all_logits.append(logits)
             log_probs = F.log_softmax(logits, dim=-1).transpose(0, 1)
-            curr_input_lengths = input_lengths // 8 
+            if output_lengths and idx < len(output_lengths):
+                curr_input_lengths = torch.tensor([output_lengths[idx]] * logits.size(0), dtype=torch.long, device=log_probs.device)
+            else:
+                curr_input_lengths = torch.tensor(
+                    [self.model.get_output_length(l.item()) for l in input_lengths],
+                    dtype=torch.long, device=log_probs.device
+                )
             loss = self.ctc_loss(log_probs, targets, curr_input_lengths, target_lengths)
             total_ctc_loss += loss
 
         with torch.no_grad():
             avg_probs = torch.stack([F.softmax(l, dim=-1) for l in all_logits]).mean(dim=0)
-        
+
         total_distill_loss = 0
         for logits in all_logits:
             log_probs = F.log_softmax(logits, dim=-1)
@@ -69,12 +117,12 @@ class SLRTrainer:
             
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
             self.optimizer.step()
+            self.scheduler.step()
             
             total_loss += loss.item()
             pbar.set_postfix(loss=loss.item())
             wandb.log({"step_train_loss": loss.item()})
-            
-        self.scheduler.step()
+        
         avg_loss = total_loss / len(self.train_loader)
         wandb.log({"epoch": epoch, "train_loss": avg_loss, "lr": self.optimizer.param_groups[0]['lr']})
         return avg_loss
