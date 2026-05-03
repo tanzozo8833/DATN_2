@@ -1,13 +1,46 @@
 import torch
 import torch.nn as nn
 import yaml
-from src.models.modules.lightweight_mska_module import LightweightMSKAModule
-from src.models.modules.sgr_module import SGRModule
 from src.models.lightweight_head import LightweightHead
+from src.models.modules.spatial_attention import SpatialAttention
+
+class StreamEncoder(nn.Module):
+    def __init__(self, embed_dim):
+        super().__init__()
+        self.conv1 = nn.Conv2d(embed_dim, 128, kernel_size=1)
+        self.bn1 = nn.BatchNorm2d(128)
+        self.relu1 = nn.LeakyReLU(0.1)
+
+        self.conv2 = nn.Conv2d(128, 128, kernel_size=(3,1), stride=(2,1), padding=(1,0))
+        self.bn2 = nn.BatchNorm2d(128)
+        self.relu2 = nn.LeakyReLU(0.1)
+        self.attn1 = SpatialAttention(128)
+
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=1)
+        self.bn3 = nn.BatchNorm2d(256)
+        self.relu3 = nn.LeakyReLU(0.1)
+
+        self.conv4 = nn.Conv2d(256, 256, kernel_size=(3,1), stride=(2,1), padding=(1,0))
+        self.bn4 = nn.BatchNorm2d(256)
+        self.relu4 = nn.LeakyReLU(0.1)
+        self.attn2 = SpatialAttention(256)
+
+        self.conv5 = nn.Conv2d(256, 256, kernel_size=(3,1), stride=(2,1), padding=(1,0))
+        self.bn5 = nn.BatchNorm2d(256)
+        self.relu5 = nn.LeakyReLU(0.1)
+        self.attn3 = SpatialAttention(256)
+
+    def forward(self, x):
+        x = self.relu1(self.bn1(self.conv1(x)))
+        x = self.attn1(self.relu2(self.bn2(self.conv2(x))))
+        x = self.relu3(self.bn3(self.conv3(x)))
+        x = self.attn2(self.relu4(self.bn4(self.conv4(x))))
+        x = self.attn3(self.relu5(self.bn5(self.conv5(x))))
+        return x
 
 class LightMSKA(nn.Module):
     def __init__(self, config_path, num_classes, embed_dim=128):
-        super(LightMSKA, self).__init__()
+        super().__init__()
 
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
@@ -19,8 +52,6 @@ class LightMSKA(nn.Module):
         self.input_projs = nn.ModuleDict()
         self.encoders = nn.ModuleDict()
         self.heads = nn.ModuleDict()
-        self.sgrs = nn.ModuleDict()
-        self.context_encoders = nn.ModuleDict()
 
         for name in self.stream_names:
             num_points = len(self.streams_cfg[name]['indices'])
@@ -30,26 +61,11 @@ class LightMSKA(nn.Module):
                 nn.LeakyReLU(0.1)
             )
 
-            self.encoders[name] = nn.Sequential(
-                LightweightMSKAModule(128, 128, num_points),
-                LightweightMSKAModule(128, 256, num_points),
-                LightweightMSKAModule(256, 256, num_points)
-            )
+            self.encoders[name] = StreamEncoder(embed_dim)
 
-            self.sgrs[name] = SGRModule(num_points)
-            self.context_encoders[name] = nn.TransformerEncoder(
-                nn.TransformerEncoderLayer(
-                    d_model=256,
-                    nhead=8,
-                    dim_feedforward=1024,
-                    batch_first=True
-                ),
-                num_layers=2
-            )
             self.heads[name] = LightweightHead(256, num_classes)
 
-        self.fuse_weights = nn.Parameter(torch.ones(5, 1, 1, 1))
-        self.fuse_head = LightweightHead(256, num_classes)
+        self.fuse_head = LightweightHead(256 * 5, num_classes)
 
     def forward(self, x):
         batch_size, t, n_total, c = x.shape
@@ -73,25 +89,19 @@ class LightMSKA(nn.Module):
 
             x_stream = x_stream.permute(0, 3, 1, 2)
 
-            sgr_mat = self.sgrs[name]()
-
-            feat = x_stream
-            for i, layer in enumerate(self.encoders[name]):
-                feat = layer(feat, sgr=sgr_mat if i == 0 else None)
+            feat = self.encoders[name](x_stream)
 
             output_lengths.append(feat.size(2))
 
-            B, C, T, N = feat.shape
-            feat_reshaped = feat.permute(0, 2, 3, 1).reshape(B * T, N, C)
-            feat_reshaped = self.context_encoders[name](feat_reshaped)
-            feat = feat_reshaped.reshape(B, T, N, C).permute(0, 3, 1, 2)
+            feat = feat.mean(dim=-1)
 
             logits = self.heads[name](feat)
             stream_logits[name] = logits
-            stream_features.append(feat.mean(dim=-1, keepdim=True))
+            stream_features.append(feat)
 
-        fused_feat = torch.cat(stream_features, dim=-1).mean(dim=-1)
-        fuse_logits = self.fuse_head(fused_feat.unsqueeze(-1))
+        fused_feat = torch.cat(stream_features, dim=1)
+        output_lengths.append(fused_feat.size(2))
+        fuse_logits = self.fuse_head(fused_feat)
         stream_logits['fuse'] = fuse_logits
         stream_logits['output_lengths'] = output_lengths
 

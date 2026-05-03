@@ -2,16 +2,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from src.models.modules.ds_conv import DSConv2D
+from src.models.modules.temporal_pe import TemporalPositionalEncoding
 
 class LightweightHead(nn.Module):
     def __init__(self, in_channels, num_classes, kernel_size=3):
         super().__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d((None, 1))
+        self.pe = TemporalPositionalEncoding(in_channels)
         self.temporal_fc = nn.Sequential(
             nn.Linear(in_channels, in_channels),
             nn.BatchNorm1d(in_channels),
             nn.ReLU(inplace=True)
         )
+        self.ln = nn.LayerNorm(in_channels)
         self.transformer = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
                 d_model=in_channels,
@@ -28,13 +30,14 @@ class LightweightHead(nn.Module):
         self.classifier = nn.Linear(in_channels, num_classes)
 
     def forward(self, x):
-        x = self.avg_pool(x).squeeze(-1)
+        if x.dim() == 4:
+            x = x.mean(dim=-1)
         x = x.transpose(1, 2)
+        x = self.pe(x)
         b, t, c = x.shape
-        x = x.reshape(-1, c)
-        x = self.temporal_fc(x)
-        x = x.view(b, t, c)
-        x = self.transformer(x)
+        x = self.temporal_fc(x.reshape(-1, c)).view(b, t, c)
+        x = self.ln(x)
+        x = x + self.transformer(x)
         x = x.transpose(1, 2).unsqueeze(-1)
         x = self.ds_conv_block(x)
         x = x.squeeze(-1).transpose(1, 2)
