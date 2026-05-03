@@ -1,0 +1,8 @@
+torch>=2.0.0
+torchvision
+numpy
+pyyaml
+tqdm
+pandas
+jiwer
+tensorboard
