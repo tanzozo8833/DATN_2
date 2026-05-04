@@ -7,6 +7,7 @@ import os
 import wandb
 from src.utils.metrics import calculate_wer
 
+
 try:
     from pyctcdecode import build_ctc_decoder
     CTC_AVAILABLE = True
@@ -15,7 +16,7 @@ except ImportError:
     build_ctc_decoder = None
 
 
-class SLRTrainer:
+class SLRrainer:
     def __init__(self, model, train_loader, dev_loader, augmentor, config, gloss_dict):
         self.model = model.to(config['device'])
         self.train_loader = train_loader
@@ -55,7 +56,10 @@ class SLRTrainer:
             anneal_strategy='cos'
         )
 
-        wandb.init(project="Light-MSKA-SLR", config=config)
+        try:
+            wandb.init(project="Light-MSKA-SLR", config=config)
+        except Exception:
+            pass
 
     def decode_beam(self, logits):
         if self.beam_decoder is None:
@@ -122,10 +126,16 @@ class SLRTrainer:
 
             total_loss += loss.item()
             pbar.set_postfix(loss=loss.item())
-            wandb.log({"step_train_loss": loss.item()})
+            try:
+                wandb.log({"step_train_loss": loss.item()})
+            except Exception:
+                pass
 
         avg_loss = total_loss / len(self.train_loader)
-        wandb.log({"epoch": epoch, "train_loss": avg_loss, "lr": self.optimizer.param_groups[0]['lr']})
+        try:
+            wandb.log({"epoch": epoch, "train_loss": avg_loss, "lr": self.optimizer.param_groups[0]['lr']})
+        except Exception:
+            pass
         return avg_loss
 
     def decode_greedy(self, logits):
@@ -176,14 +186,17 @@ class SLRTrainer:
                         if batch_idx < 2 and i < 3:
                             t_words = [self.id2gloss.get(x, f"ID:{x}") for x in target if x > 8]
                             p_words = [self.id2gloss.get(x, f"ID:{x}") for x in preds[i] if x > 8]
-                            f.write(f"Gốc: {' '.join(t_words)} | IDs: {target}\n")
-                            f.write(f"Đoán: {' '.join(p_words)} | IDs: {preds[i]}\n")
+                            f.write(f"Goc: {' '.join(t_words)} | IDs: {target}\n")
+                            f.write(f"Doan: {' '.join(p_words)} | IDs: {preds[i]}\n")
                             f.write("-" * 10 + "\n")
 
         avg_val_loss = val_loss / max(len(self.dev_loader), 1)
         current_wer = calculate_wer(all_preds, all_targets)
 
-        wandb.log({"val_loss": avg_val_loss, "val_wer": current_wer * 100})
+        try:
+            wandb.log({"val_loss": avg_val_loss, "val_wer": current_wer * 100})
+        except Exception:
+            pass
         print(f" -> Validation WER: {current_wer*100:.2f}%")
         return avg_val_loss
 

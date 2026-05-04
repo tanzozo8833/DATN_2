@@ -32,9 +32,8 @@ class SLRDataset(Dataset):
         with open(data_path, 'rb') as f:
             self.raw_data = pickle.load(f)
 
-        # Lưu lại danh sách các key để truy xuất theo index
         self.keys = list(self.raw_data.keys())
-        print(f"[*] Đã tải {len(self.keys)} mẫu dữ liệu cho tập '{self.phase}'.")
+        print(f"[*] Loaded {len(self.keys)} samples for '{self.phase}'.")
 
     def __len__(self):
         return len(self.keys)

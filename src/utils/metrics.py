@@ -31,7 +31,7 @@ def calculate_wer(predictions, targets):
     total_distance = 0
     total_words = 0
 
-    for hyp, ref in zip(predictions, targets):
+    for ref, hyp in zip(targets, predictions):
         # Loại bỏ các token đặc biệt như <pad>, <s>, </s> nếu có
         ref = [i for i in ref if i > 4]
         hyp = [i for i in hyp if i > 4]
