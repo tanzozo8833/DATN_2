@@ -22,7 +22,8 @@ visualize_streams/
 
 keypoint/
 
-data/
+data/processed/
+data/raw/
 
 results/
 

@@ -3,7 +3,7 @@ import pickle
 import torch
 from torch.utils.data import DataLoader
 
-from src.data1.dataset import SLRDataset, slr_collate_fn
+from src.data.dataset import SLRDataset, slr_collate_fn
 from src.models.slr_model import SLRModel
 from src.utils.augmentation import Augmentor
 from src.trainer import Trainer
