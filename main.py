@@ -10,7 +10,7 @@ from src.trainer import Trainer
 
 
 def load_config(path: str) -> dict:
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
 
@@ -40,7 +40,7 @@ def main():
     print(f'[*] Vocab size: {num_classes}')
 
     # ------------------------------------------------------------------ #
-    # Dataset & DataLoader
+    # Dataset & DataLoader  (KHÔNG sửa, giữ augmentor cũ)
     # ------------------------------------------------------------------ #
     augmentor = Augmentor(
         rotation_range=0.15,
@@ -76,58 +76,76 @@ def main():
         num_classes=num_classes,
         embed_dim=mcfg['embed_dim'],
         tcn_channels=mcfg['tcn_channels'],
-        tcn_kernel=mcfg['tcn_kernel'],
         tcn_layers=mcfg['tcn_layers'],
+        kernel_size=mcfg.get('kernel_size', 3),
         gru_hidden=mcfg['gru_hidden'],
         refine_hidden=mcfg['refine_hidden'],
         dropout=mcfg['dropout'],
     )
-    n_params = model.count_parameters()
-    print(f'[*] Model params: {n_params:,}')
+    print(f'[*] Model params: {model.count_parameters():,}')
 
     # ------------------------------------------------------------------ #
     # Trainer
     # ------------------------------------------------------------------ #
     tcfg = cfg['training']
     train_config = {
-        'device':       device,
-        'lr':           tcfg['lr'],
-        'epochs':       tcfg['epochs'],
-        'weight_decay': tcfg['weight_decay'],
-        'ctc_blank_id': tcfg['ctc_blank_id'],
-        'clip_grad':    tcfg['clip_grad'],
+        'device':           device,
+        'lr':               tcfg['lr'],
+        'epochs':           tcfg['epochs'],
+        'weight_decay':     tcfg['weight_decay'],
+        'ctc_blank_id':     tcfg['ctc_blank_id'],
+        'clip_grad':        tcfg['clip_grad'],
+        'aux_loss_weight':  tcfg['aux_loss_weight'],
+        'use_beam_eval':    tcfg['use_beam_eval'],
+        'beam_size':        tcfg['beam_size'],
+        'beam_top_k':       tcfg['beam_top_k'],
+        'lr_factor':        tcfg['lr_factor'],
+        'lr_patience':      tcfg['lr_patience'],
+        'min_lr':           tcfg['min_lr'],
     }
 
     trainer = Trainer(model, train_loader, dev_loader, train_config, ids2gloss)
 
-    # Optional: resume from checkpoint
-    # trainer.load_checkpoint('weights/best.pth')
+    # ------------------------------------------------------------------ #
+    # Training loop với early stopping
+    # ------------------------------------------------------------------ #
+    save_dir         = tcfg['save_dir']
+    early_stop_pat   = tcfg['early_stop_patience']
+    early_stop_min   = tcfg['early_stop_min_epochs']
 
-    # ------------------------------------------------------------------ #
-    # Training loop
-    # ------------------------------------------------------------------ #
-    save_dir = tcfg['save_dir']
     best_wer = float('inf')
+    patience_counter = 0
 
     for epoch in range(1, tcfg['epochs'] + 1):
-        train_loss = trainer.train_epoch(epoch)
-        val_loss, wer = trainer.validate(epoch)
+        train_metrics = trainer.train_epoch(epoch)
+        val_metrics   = trainer.validate(epoch)
+
+        # Step LR scheduler theo val_wer
+        trainer.step_scheduler(val_metrics['val_wer'])
 
         print(
             f'Epoch {epoch:3d}/{tcfg["epochs"]} | '
-            f'Train Loss: {train_loss:.4f} | '
-            f'Val Loss: {val_loss:.4f} | '
-            f'WER: {wer:.4f}'
+            f'lr {trainer.get_lr():.2e} | '
+            f'main {train_metrics["train_main_loss"]:.4f} | '
+            f'aux {train_metrics["train_aux_loss"]:.4f} | '
+            f'val_loss {val_metrics["val_loss"]:.4f} | '
+            f'WER {val_metrics["val_wer"]:.4f}'
         )
 
-        if wer < best_wer:
-            best_wer = wer
-            trainer.save_checkpoint(epoch, wer, path=f'{save_dir}best.pth')
-            print(f'  => Best WER {wer:.4f} — checkpoint saved.')
+        # Track best & early stop
+        if val_metrics['val_wer'] < best_wer:
+            best_wer = val_metrics['val_wer']
+            patience_counter = 0
+            trainer.save_checkpoint(epoch, best_wer, path=f'{save_dir}best.pth')
+            print(f'  => Best WER {best_wer:.4f} — checkpoint saved.')
+        else:
+            patience_counter += 1
+            if epoch >= early_stop_min and patience_counter >= early_stop_pat:
+                print(f'  => Early stopping (patience={early_stop_pat} reached). Best WER: {best_wer:.4f}')
+                break
 
-        # Periodic checkpoint mỗi 10 epoch
-        if epoch % 10 == 0:
-            trainer.save_checkpoint(epoch, wer, path=f'{save_dir}epoch_{epoch:03d}.pth')
+        if epoch % 20 == 0:
+            trainer.save_checkpoint(epoch, val_metrics['val_wer'], path=f'{save_dir}epoch_{epoch:03d}.pth')
 
     print(f'\n[*] Training complete. Best WER: {best_wer:.4f}')
 

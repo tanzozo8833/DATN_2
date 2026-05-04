@@ -1,37 +1,55 @@
 data:
   train_path: data/processed/train_77.pkl
-  dev_path: data/processed/dev_77.pkl
-  test_path: data/processed/test_77.pkl
-  dict_path: data/processed/gloss2ids.pkl
+  dev_path:   data/processed/dev_77.pkl
+  test_path:  data/processed/test_77.pkl
+  dict_path:  data/processed/gloss2ids.pkl
   num_workers: 4
 
-  # 77 điểm được sắp xếp theo thứ tự: Body → Left Hand → Right Hand → Mouth → Face
-  # (theo pre_processing.py, KHÔNG sort theo chỉ số gốc)
+  # 77 điểm: Body → Left Hand → Right Hand → Mouth → Face
   streams:
-    pose:       {start: 0,  end: 9,  n_joints: 9}   # 9 điểm body
-    left_hand:  {start: 9,  end: 30, n_joints: 21}  # 21 điểm tay trái
-    right_hand: {start: 30, end: 51, n_joints: 21}  # 21 điểm tay phải
-    mouth:      {start: 51, end: 63, n_joints: 12}  # 12 điểm miệng
-    face:       {start: 63, end: 77, n_joints: 14}  # 14 điểm mặt
+    pose:       {start: 0,  end: 9,  n_joints: 9}
+    left_hand:  {start: 9,  end: 30, n_joints: 21}
+    right_hand: {start: 30, end: 51, n_joints: 21}
+    mouth:      {start: 51, end: 63, n_joints: 12}
+    face:       {start: 63, end: 77, n_joints: 14}
 
+# Phương án B (conservative): v1 baseline + velocity features
 model:
-  embed_dim: 128      # Chiều embedding đầu ra của linear projection mỗi stream
-  tcn_channels: 128   # Số kênh TCN
-  tcn_kernel: 3       # Kernel size TCN
-  tcn_layers: 2       # Số lớp TCN
-  gru_hidden: 64      # Hidden size GRU mỗi chiều (output = 128 do bidirectional)
-  refine_hidden: 128  # Hidden size GRU temporal refinement (output = 256)
-  dropout: 0.3
+  embed_dim:     128
+  tcn_channels:  128
+  tcn_layers:    2
+  kernel_size:   3        # single kernel (không multi-scale)
+  gru_hidden:    64       # output BiGRU = 128
+  refine_hidden: 128      # output BiGRU = 256
+  dropout:       0.3      # về như v1
 
 training:
-  device: auto         # 'auto' = cuda nếu có, ngược lại cpu
+  device: auto
   lr: 1.0e-3
   epochs: 150
   batch_size: 16
-  weight_decay: 1.0e-4
-  ctc_blank_id: 0      # '<s>' dùng làm CTC blank
+  weight_decay: 1.0e-4    # về như v1
+  ctc_blank_id: 0
   clip_grad: 5.0
+
+  # Aux CTC heads đã bị remove → weight không dùng (giữ key cho tương thích)
+  aux_loss_weight: 0.0
+
+  # Beam search decode (training-free, low risk)
+  use_beam_eval: true
+  beam_size: 5
+  beam_top_k: 10
+
+  # ReduceLROnPlateau scheduler theo val WER
+  lr_factor: 0.5
+  lr_patience: 5
+  min_lr: 1.0e-6
+
+  # Early stopping
+  early_stop_patience: 15
+  early_stop_min_epochs: 30
+
   save_dir: weights/
   log_wandb: false
   project_name: slr-cslr
-  run_name: 5stream-gated-ctc
+  run_name: 5stream-vB-velocity-beam

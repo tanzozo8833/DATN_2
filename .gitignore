@@ -35,6 +35,7 @@ data.zip
 visualizations/
 
 weights/
+weights_1/
 
 output_full_tensor.txt
 

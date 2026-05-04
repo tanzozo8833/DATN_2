@@ -1,0 +1,11 @@
+[*] Total params: 2,864,605
+[*] Inference params: 2,139,625
+[*] log_probs: torch.Size([2, 40, 1124])
+[*] attn: torch.Size([2, 40, 5])
+[*] aux streams: ['pose', 'left_hand', 'right_hand', 'mouth', 'face'] | each: torch.Size([2, 40, 1124])
+[*] Main CTC: 107.751 | Aux CTC: 110.311 | Total: 129.813
+[*] Backward OK
+[*] Greedy[0] len: 10 | Beam[0] len: 21
+[*] Greedy[0]: [336, 856, 476, 856, 180, 856, 180, 856, 1104, 980]...
+[*] Beam[0]:   [336, 180, 856, 1086, 856, 1086, 856, 828, 856, 476]...
+[OK] All checks passed!

@@ -1,0 +1,139 @@
+[*] Device: cuda
+[*] Vocab size: 1124
+[*] Train: 7094 samples | Dev: 519 samples
+[*] Model params:  total=2,864,605  | inference-only=2,139,625
+Epoch   1/150 | lr 1.00e-03 | main 5.8294 | aux 9.2146 | val_loss 5.1736 | WER 1.0000                                                                                        
+  => Best WER 1.0000 — checkpoint saved.
+Epoch   2/150 | lr 1.00e-03 | main 4.9096 | aux 5.2845 | val_loss 4.6753 | WER 0.9931                                                                                        
+  => Best WER 0.9931 — checkpoint saved.
+Epoch   3/150 | lr 1.00e-03 | main 4.5687 | aux 5.1478 | val_loss 4.3138 | WER 0.9756                                                                                        
+  => Best WER 0.9756 — checkpoint saved.
+Epoch   4/150 | lr 1.00e-03 | main 4.3212 | aux 5.0382 | val_loss 4.1277 | WER 0.9706                                                                                        
+  => Best WER 0.9706 — checkpoint saved.
+Epoch   5/150 | lr 1.00e-03 | main 4.1158 | aux 4.9368 | val_loss 4.0908 | WER 0.9701                                                                                        
+  => Best WER 0.9701 — checkpoint saved.
+Epoch   6/150 | lr 1.00e-03 | main 3.9532 | aux 4.8522 | val_loss 3.9253 | WER 0.9473                                                                                        
+  => Best WER 0.9473 — checkpoint saved.
+Epoch   7/150 | lr 1.00e-03 | main 3.8173 | aux 4.7781 | val_loss 3.7186 | WER 0.9234                                                                                        
+  => Best WER 0.9234 — checkpoint saved.
+Epoch   8/150 | lr 1.00e-03 | main 3.7097 | aux 4.7052 | val_loss 3.6485 | WER 0.9138                                                                                        
+  => Best WER 0.9138 — checkpoint saved.
+Epoch   9/150 | lr 1.00e-03 | main 3.6099 | aux 4.6374 | val_loss 3.6753 | WER 0.9078                                                                                        
+  => Best WER 0.9078 — checkpoint saved.
+Epoch  10/150 | lr 1.00e-03 | main 3.5209 | aux 4.5769 | val_loss 3.5824 | WER 0.8910                                                                                        
+  => Best WER 0.8910 — checkpoint saved.
+Epoch  11/150 | lr 1.00e-03 | main 3.4282 | aux 4.5175 | val_loss 3.5946 | WER 0.8976                                                                                        
+Epoch  12/150 | lr 1.00e-03 | main 3.3658 | aux 4.4616 | val_loss 3.4534 | WER 0.8633                                                                                        
+  => Best WER 0.8633 — checkpoint saved.
+Epoch  13/150 | lr 1.00e-03 | main 3.2766 | aux 4.4056 | val_loss 3.3461 | WER 0.8485                                                                                        
+  => Best WER 0.8485 — checkpoint saved.
+Epoch  14/150 | lr 1.00e-03 | main 3.2198 | aux 4.3515 | val_loss 3.3333 | WER 0.8353                                                                                        
+  => Best WER 0.8353 — checkpoint saved.
+Epoch  15/150 | lr 1.00e-03 | main 3.1569 | aux 4.3026 | val_loss 3.3196 | WER 0.8194                                                                                        
+  => Best WER 0.8194 — checkpoint saved.
+Epoch  16/150 | lr 1.00e-03 | main 3.1049 | aux 4.2514 | val_loss 3.2452 | WER 0.7944                                                                                        
+  => Best WER 0.7944 — checkpoint saved.
+Epoch  17/150 | lr 1.00e-03 | main 3.0520 | aux 4.2053 | val_loss 3.2012 | WER 0.7840                                                                                        
+  => Best WER 0.7840 — checkpoint saved.
+Epoch  18/150 | lr 1.00e-03 | main 2.9977 | aux 4.1590 | val_loss 3.1458 | WER 0.7568                                                                                        
+  => Best WER 0.7568 — checkpoint saved.
+Epoch  19/150 | lr 1.00e-03 | main 2.9515 | aux 4.1113 | val_loss 3.1534 | WER 0.7513                                                                                        
+  => Best WER 0.7513 — checkpoint saved.
+Epoch  20/150 | lr 1.00e-03 | main 2.8953 | aux 4.0710 | val_loss 3.1018 | WER 0.7379                                                                                        
+  => Best WER 0.7379 — checkpoint saved.
+Epoch  21/150 | lr 1.00e-03 | main 2.8601 | aux 4.0266 | val_loss 3.0027 | WER 0.7282                                                                                        
+  => Best WER 0.7282 — checkpoint saved.
+Epoch  22/150 | lr 1.00e-03 | main 2.8226 | aux 3.9946 | val_loss 3.0941 | WER 0.7431                                                                                        
+Epoch  23/150 | lr 1.00e-03 | main 2.7858 | aux 3.9528 | val_loss 2.9633 | WER 0.6997                                                                                        
+  => Best WER 0.6997 — checkpoint saved.
+Epoch  24/150 | lr 1.00e-03 | main 2.7461 | aux 3.9242 | val_loss 3.0346 | WER 0.7197                                                                                        
+Epoch  25/150 | lr 1.00e-03 | main 2.7228 | aux 3.8886 | val_loss 2.9404 | WER 0.6972                                                                                        
+  => Best WER 0.6972 — checkpoint saved.
+Epoch  26/150 | lr 1.00e-03 | main 2.6850 | aux 3.8528 | val_loss 2.9868 | WER 0.7088                                                                                        
+Epoch  27/150 | lr 1.00e-03 | main 2.6427 | aux 3.8171 | val_loss 2.8661 | WER 0.6681                                                                                        
+  => Best WER 0.6681 — checkpoint saved.
+Epoch  28/150 | lr 1.00e-03 | main 2.6291 | aux 3.7912 | val_loss 2.8643 | WER 0.6662                                                                                        
+  => Best WER 0.6662 — checkpoint saved.
+Epoch  29/150 | lr 1.00e-03 | main 2.5882 | aux 3.7566 | val_loss 2.9536 | WER 0.6788                                                                                        
+Epoch  30/150 | lr 1.00e-03 | main 2.5644 | aux 3.7292 | val_loss 2.8661 | WER 0.6720                                                                                        
+Epoch  31/150 | lr 1.00e-03 | main 2.5342 | aux 3.6992 | val_loss 2.8693 | WER 0.6519                                                                                        
+  => Best WER 0.6519 — checkpoint saved.
+Epoch  32/150 | lr 1.00e-03 | main 2.5122 | aux 3.6731 | val_loss 2.8001 | WER 0.6352                                                                                        
+  => Best WER 0.6352 — checkpoint saved.
+Epoch  33/150 | lr 1.00e-03 | main 2.4939 | aux 3.6452 | val_loss 2.8100 | WER 0.6462                                                                                        
+Epoch  34/150 | lr 1.00e-03 | main 2.4643 | aux 3.6179 | val_loss 2.7866 | WER 0.6379                                                                                        
+Epoch  35/150 | lr 1.00e-03 | main 2.4409 | aux 3.5928 | val_loss 2.8100 | WER 0.6451                                                                                        
+Epoch  36/150 | lr 1.00e-03 | main 2.4180 | aux 3.5703 | val_loss 2.8911 | WER 0.6508                                                                                        
+Epoch  37/150 | lr 1.00e-03 | main 2.4060 | aux 3.5462 | val_loss 2.8452 | WER 0.6492                                                                                        
+Epoch  38/150 | lr 1.00e-03 | main 2.3791 | aux 3.5228 | val_loss 2.7800 | WER 0.6198                                                                                        
+  => Best WER 0.6198 — checkpoint saved.
+Epoch  39/150 | lr 1.00e-03 | main 2.3593 | aux 3.5058 | val_loss 2.7835 | WER 0.6289                                                                                        
+Epoch  40/150 | lr 1.00e-03 | main 2.3356 | aux 3.4817 | val_loss 2.7627 | WER 0.6226                                                                                        
+Epoch  41/150 | lr 1.00e-03 | main 2.3250 | aux 3.4587 | val_loss 2.7905 | WER 0.6239                                                                                        
+Epoch  42/150 | lr 1.00e-03 | main 2.2936 | aux 3.4370 | val_loss 2.7978 | WER 0.6124                                                                                        
+  => Best WER 0.6124 — checkpoint saved.
+Epoch  43/150 | lr 1.00e-03 | main 2.2829 | aux 3.4236 | val_loss 2.7844 | WER 0.6209                                                                                        
+Epoch  44/150 | lr 1.00e-03 | main 2.2578 | aux 3.4012 | val_loss 2.7096 | WER 0.5998                                                                                        
+  => Best WER 0.5998 — checkpoint saved.
+Epoch  45/150 | lr 1.00e-03 | main 2.2550 | aux 3.3861 | val_loss 2.7279 | WER 0.5918                                                                                        
+  => Best WER 0.5918 — checkpoint saved.
+Epoch  46/150 | lr 1.00e-03 | main 2.2292 | aux 3.3671 | val_loss 2.7646 | WER 0.6160                                                                                        
+Epoch  47/150 | lr 1.00e-03 | main 2.2316 | aux 3.3535 | val_loss 2.7252 | WER 0.6009                                                                                        
+Epoch  48/150 | lr 1.00e-03 | main 2.1885 | aux 3.3284 | val_loss 2.7411 | WER 0.6039                                                                                        
+Epoch  49/150 | lr 1.00e-03 | main 2.1893 | aux 3.3138 | val_loss 2.7231 | WER 0.6064                                                                                        
+Epoch  50/150 | lr 1.00e-03 | main 2.1776 | aux 3.3037 | val_loss 2.7286 | WER 0.5984                                                                                        
+Epoch  51/150 | lr 1.00e-03 | main 2.1647 | aux 3.2840 | val_loss 2.6517 | WER 0.5866                                                                                        
+  => Best WER 0.5866 — checkpoint saved.
+Epoch  52/150 | lr 1.00e-03 | main 2.1227 | aux 3.2676 | val_loss 2.6411 | WER 0.5825                                                                                        
+  => Best WER 0.5825 — checkpoint saved.
+Epoch  53/150 | lr 1.00e-03 | main 2.1193 | aux 3.2506 | val_loss 2.7886 | WER 0.6127                                                                                        
+Epoch  54/150 | lr 1.00e-03 | main 2.1180 | aux 3.2419 | val_loss 2.6408 | WER 0.5855                                                                                        
+Epoch  55/150 | lr 1.00e-03 | main 2.0841 | aux 3.2247 | val_loss 2.7152 | WER 0.5907                                                                                        
+Epoch  56/150 | lr 1.00e-03 | main 2.0890 | aux 3.2124 | val_loss 2.6965 | WER 0.5819                                                                                        
+  => Best WER 0.5819 — checkpoint saved.
+Epoch  57/150 | lr 1.00e-03 | main 2.0916 | aux 3.2018 | val_loss 2.7755 | WER 0.6044                                                                                        
+Epoch  58/150 | lr 1.00e-03 | main 2.0710 | aux 3.1918 | val_loss 2.7979 | WER 0.5981                                                                                        
+Epoch  59/150 | lr 1.00e-03 | main 2.0550 | aux 3.1775 | val_loss 2.7174 | WER 0.5877                                                                                        
+Epoch  60/150 | lr 1.00e-03 | main 2.0452 | aux 3.1661 | val_loss 2.7041 | WER 0.5915                                                                                        
+Epoch  61/150 | lr 1.00e-03 | main 2.0419 | aux 3.1530 | val_loss 2.7232 | WER 0.5902                                                                                        
+Epoch  62/150 | lr 1.00e-03 | main 2.0271 | aux 3.1418 | val_loss 2.6614 | WER 0.5775                                                                                        
+  => Best WER 0.5775 — checkpoint saved.
+Epoch  63/150 | lr 1.00e-03 | main 2.0069 | aux 3.1256 | val_loss 2.6992 | WER 0.5786                                                                                        
+Epoch  64/150 | lr 1.00e-03 | main 2.0125 | aux 3.1190 | val_loss 2.7319 | WER 0.5869                                                                                        
+Epoch  65/150 | lr 1.00e-03 | main 1.9917 | aux 3.1051 | val_loss 2.6893 | WER 0.5855                                                                                        
+Epoch  66/150 | lr 1.00e-03 | main 1.9659 | aux 3.0946 | val_loss 2.6718 | WER 0.5745                                                                                        
+  => Best WER 0.5745 — checkpoint saved.
+Epoch  67/150 | lr 1.00e-03 | main 1.9632 | aux 3.0851 | val_loss 2.6401 | WER 0.5660                                                                                        
+  => Best WER 0.5660 — checkpoint saved.
+Epoch  68/150 | lr 1.00e-03 | main 1.9472 | aux 3.0729 | val_loss 2.6849 | WER 0.5704                                                                                        
+Epoch  69/150 | lr 1.00e-03 | main 1.9463 | aux 3.0672 | val_loss 2.6867 | WER 0.5751                                                                                        
+Epoch  70/150 | lr 1.00e-03 | main 1.9379 | aux 3.0565 | val_loss 2.6677 | WER 0.5638                                                                                        
+  => Best WER 0.5638 — checkpoint saved.
+Epoch  71/150 | lr 1.00e-03 | main 1.9481 | aux 3.0524 | val_loss 2.6956 | WER 0.5764                                                                                        
+Epoch  72/150 | lr 1.00e-03 | main 1.9115 | aux 3.0295 | val_loss 2.7104 | WER 0.5723                                                                                        
+Epoch  73/150 | lr 1.00e-03 | main 1.9221 | aux 3.0274 | val_loss 2.6719 | WER 0.5668                                                                                        
+Epoch  74/150 | lr 1.00e-03 | main 1.9226 | aux 3.0235 | val_loss 2.7920 | WER 0.5921                                                                                        
+Epoch  75/150 | lr 1.00e-03 | main 1.9147 | aux 3.0130 | val_loss 2.6698 | WER 0.5685                                                                                        
+Epoch  76/150 | lr 5.00e-04 | main 1.9091 | aux 3.0005 | val_loss 2.6733 | WER 0.5668                                                                                        
+Epoch  77/150 | lr 5.00e-04 | main 1.7718 | aux 2.9177 | val_loss 2.6725 | WER 0.5627                                                                                        
+  => Best WER 0.5627 — checkpoint saved.
+Epoch  78/150 | lr 5.00e-04 | main 1.7437 | aux 2.9109 | val_loss 2.6625 | WER 0.5542                                                                                        
+  => Best WER 0.5542 — checkpoint saved.
+Epoch  79/150 | lr 5.00e-04 | main 1.7332 | aux 2.8938 | val_loss 2.6512 | WER 0.5490                                                                                        
+  => Best WER 0.5490 — checkpoint saved.
+Epoch  80/150 | lr 5.00e-04 | main 1.7272 | aux 2.8875 | val_loss 2.6388 | WER 0.5600                                                                                        
+Epoch  81/150 | lr 5.00e-04 | main 1.7025 | aux 2.8787 | val_loss 2.6476 | WER 0.5531                                                                                        
+Epoch  82/150 | lr 5.00e-04 | main 1.6915 | aux 2.8714 | val_loss 2.6904 | WER 0.5564                                                                                        
+Epoch  83/150 | lr 5.00e-04 | main 1.6904 | aux 2.8636 | val_loss 2.6992 | WER 0.5501                                                                                        
+Epoch  84/150 | lr 5.00e-04 | main 1.6802 | aux 2.8553 | val_loss 2.6961 | WER 0.5523                                                                                        
+Epoch  85/150 | lr 2.50e-04 | main 1.6835 | aux 2.8520 | val_loss 2.6958 | WER 0.5537                                                                                        
+Epoch  86/150 | lr 2.50e-04 | main 1.6254 | aux 2.8119 | val_loss 2.7154 | WER 0.5539                                                                                        
+Epoch  87/150 | lr 2.50e-04 | main 1.6093 | aux 2.8037 | val_loss 2.6800 | WER 0.5443                                                                                        
+  => Best WER 0.5443 — checkpoint saved.
+Epoch  88/150 | lr 2.50e-04 | main 1.6115 | aux 2.8016 | val_loss 2.6879 | WER 0.5487                                                                                        
+Epoch  89/150 | lr 2.50e-04 | main 1.5917 | aux 2.7939 | val_loss 2.6680 | WER 0.5432                                                                                        
+  => Best WER 0.5432 — checkpoint saved.
+Epoch  90/150 | lr 2.50e-04 | main 1.5961 | aux 2.7905 | val_loss 2.6754 | WER 0.5463                                                                                        
+Epoch  91/150 | lr 2.50e-04 | main 1.5782 | aux 2.7829 | val_loss 2.6730 | WER 0.5449                                                                                        
+Epoch  92/150 | lr 2.50e-04 | main 1.5681 | aux 2.7775 | val_loss 2.6960 | WER 0.5430                                                                                        
+  => Best WER 0.5430 — checkpoint saved.
