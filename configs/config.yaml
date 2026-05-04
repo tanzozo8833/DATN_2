@@ -1,0 +1,37 @@
+data:
+  train_path: data/processed/train_77.pkl
+  dev_path: data/processed/dev_77.pkl
+  test_path: data/processed/test_77.pkl
+  dict_path: data/processed/gloss2ids.pkl
+  num_workers: 4
+
+  # 77 điểm được sắp xếp theo thứ tự: Body → Left Hand → Right Hand → Mouth → Face
+  # (theo pre_processing.py, KHÔNG sort theo chỉ số gốc)
+  streams:
+    pose:       {start: 0,  end: 9,  n_joints: 9}   # 9 điểm body
+    left_hand:  {start: 9,  end: 30, n_joints: 21}  # 21 điểm tay trái
+    right_hand: {start: 30, end: 51, n_joints: 21}  # 21 điểm tay phải
+    mouth:      {start: 51, end: 63, n_joints: 12}  # 12 điểm miệng
+    face:       {start: 63, end: 77, n_joints: 14}  # 14 điểm mặt
+
+model:
+  embed_dim: 128      # Chiều embedding đầu ra của linear projection mỗi stream
+  tcn_channels: 128   # Số kênh TCN
+  tcn_kernel: 3       # Kernel size TCN
+  tcn_layers: 2       # Số lớp TCN
+  gru_hidden: 64      # Hidden size GRU mỗi chiều (output = 128 do bidirectional)
+  refine_hidden: 128  # Hidden size GRU temporal refinement (output = 256)
+  dropout: 0.3
+
+training:
+  device: auto         # 'auto' = cuda nếu có, ngược lại cpu
+  lr: 1.0e-3
+  epochs: 150
+  batch_size: 16
+  weight_decay: 1.0e-4
+  ctc_blank_id: 0      # '<s>' dùng làm CTC blank
+  clip_grad: 5.0
+  save_dir: weights/
+  log_wandb: false
+  project_name: slr-cslr
+  run_name: 5stream-gated-ctc

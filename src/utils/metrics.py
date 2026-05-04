@@ -1,43 +1,31 @@
-import numpy as np
-import torch
+SPECIAL_IDS = frozenset(range(5))   # 0:<s>  1:<pad>  2:</s>  3:<unk>  4:<mask>
 
-def levenshtein_distance(ref, hyp):
-    """
-    Tính khoảng cách chỉnh sửa giữa chuỗi tham chiếu (ref) và chuỗi dự đoán (hyp).
-    """
-    m, n = len(ref), len(hyp)
-    if m == 0: return n
-    if n == 0: return m
 
-    dp = np.zeros((m + 1, n + 1))
-    for i in range(m + 1): dp[i][0] = i
-    for j in range(n + 1): dp[0][j] = j
-
+def levenshtein_distance(pred: list, ref: list) -> int:
+    m, n = len(pred), len(ref)
+    dp = list(range(n + 1))
     for i in range(1, m + 1):
+        new_dp = [i] + [0] * n
         for j in range(1, n + 1):
-            if ref[i-1] == hyp[j-1]:
-                dp[i][j] = dp[i-1][j-1]
+            if pred[i - 1] == ref[j - 1]:
+                new_dp[j] = dp[j - 1]
             else:
-                dp[i][j] = min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]) + 1
-    return dp[m][n]
+                new_dp[j] = 1 + min(dp[j], new_dp[j - 1], dp[j - 1])
+        dp = new_dp
+    return dp[n]
 
-def calculate_wer(predictions, targets):
+
+def calculate_wer(predictions: list[list], references: list[list]) -> float:
     """
-    Tính WER cho một batch.
-    Args:
-        predictions (list of list): Danh sách các chuỗi ID dự đoán.
-        targets (list of list): Danh sách các chuỗi ID gốc.
+    Word Error Rate (WER) trên chuỗi gloss.
+
+    Lọc bỏ special tokens (id < 5) trước khi tính.
     """
-    total_distance = 0
-    total_words = 0
-
-    for ref, hyp in zip(targets, predictions):
-        # Loại bỏ các token đặc biệt như <pad>, <s>, </s> nếu có
-        ref = [i for i in ref if i > 4]
-        hyp = [i for i in hyp if i > 4]
-
-        total_distance += levenshtein_distance(ref, hyp)
-        total_words += len(ref)
-
-    if total_words == 0: return 1
-    return total_distance / total_words
+    total_edit = 0
+    total_ref = 0
+    for pred, ref in zip(predictions, references):
+        pred_f = [t for t in pred if t not in SPECIAL_IDS]
+        ref_f  = [t for t in ref  if t not in SPECIAL_IDS]
+        total_edit += levenshtein_distance(pred_f, ref_f)
+        total_ref  += len(ref_f)
+    return total_edit / max(total_ref, 1)
