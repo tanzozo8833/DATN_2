@@ -25,8 +25,9 @@ class Trainer:
         self.config = config
         self.ids2gloss = ids2gloss
 
-        self.blank_id = config.get('ctc_blank_id', 0)
-        self.clip_grad = config.get('clip_grad', 5.0)
+        self.blank_id   = config.get('ctc_blank_id', 0)
+        self.clip_grad  = config.get('clip_grad', 5.0)
+        self.aux_weight = config.get('aux_loss_weight', 1.0)
 
         self.optimizer = AdamW(
             model.parameters(),
@@ -58,7 +59,9 @@ class Trainer:
     def train_epoch(self, epoch: int) -> float:
         self.model.train()
         total_loss = 0.0
-        n_batches = len(self.train_loader)
+        total_main = 0.0
+        total_aux  = 0.0
+        n_batches  = len(self.train_loader)
 
         pbar = tqdm(self.train_loader, desc=f'Train E{epoch}', leave=False)
         for kpts, labels, input_lens, target_lens in pbar:
@@ -69,11 +72,25 @@ class Trainer:
 
             self.optimizer.zero_grad()
 
-            log_probs, _ = self.model(kpts, input_lens)   # B × T × C
-            # CTCLoss yêu cầu T × B × C
-            log_probs_ctc = log_probs.permute(1, 0, 2).contiguous()
+            out = self.model(kpts, input_lens, return_aux=True)
+            if len(out) == 3:
+                log_probs, _, aux = out
+            else:
+                log_probs, _ = out
+                aux = {}
 
-            loss = self.ctc_loss(log_probs_ctc, labels, input_lens, target_lens)
+            main_loss = self._ctc(log_probs, labels, input_lens, target_lens)
+
+            if aux:
+                aux_losses = [
+                    self._ctc(lp, labels, input_lens, target_lens)
+                    for lp in aux.values()
+                ]
+                aux_total = torch.stack(aux_losses).mean()
+            else:
+                aux_total = torch.tensor(0.0, device=self.device)
+
+            loss = main_loss + self.aux_weight * aux_total
             loss.backward()
 
             nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad)
@@ -81,9 +98,24 @@ class Trainer:
             self.scheduler.step()
 
             total_loss += loss.item()
-            pbar.set_postfix(loss=f'{loss.item():.4f}')
+            total_main += main_loss.item()
+            total_aux  += aux_total.item()
+            pbar.set_postfix(
+                main=f'{main_loss.item():.3f}',
+                aux=f'{aux_total.item():.3f}',
+            )
 
+        # Store breakdown để main.py log
+        self.last_train_main = total_main / n_batches
+        self.last_train_aux  = total_aux  / n_batches
         return total_loss / n_batches
+
+    def _ctc(self, log_probs, labels, input_lens, target_lens):
+        """log_probs B×T×C → permute T×B×C cho CTCLoss."""
+        return self.ctc_loss(
+            log_probs.permute(1, 0, 2).contiguous(),
+            labels, input_lens, target_lens,
+        )
 
     # ------------------------------------------------------------------
     # Validate

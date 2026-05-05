@@ -206,10 +206,14 @@ class SLRModel(nn.Module):
         refine_hidden: int = 128,
         dropout: float = 0.3,
         use_velocity: bool = True,
+        use_aux: bool = True,
     ):
         super().__init__()
 
+        self.use_aux = use_aux
+
         stream_out_dim = gru_hidden * 2   # 128
+        refine_out_dim = refine_hidden * 2   # 256
 
         # ---------- 1. Per-stream encoders ----------
         self.encoders = nn.ModuleDict({
@@ -241,11 +245,21 @@ class SLRModel(nn.Module):
             batch_first=True,
             bidirectional=True,
         )
-        self.refine_norm = nn.LayerNorm(refine_hidden * 2)
+        self.refine_norm = nn.LayerNorm(refine_out_dim)
 
-        # ---------- 4. CTC head ----------
+        # ---------- 4. CTC head (shared giữa main và aux nếu use_aux=True) ----------
         self.dropout = nn.Dropout(dropout)
-        self.ctc_head = nn.Linear(refine_hidden * 2, num_classes)
+        self.ctc_head = nn.Linear(refine_out_dim, num_classes)
+
+        # ---------- 5. VAC Visual Enhancement (Min et al. 2021) ----------
+        # Project visual features (sau fusion) lên cùng dim với refined features,
+        # rồi share classifier weights để force visual và sequential representations
+        # nằm cùng không gian semantic.
+        if use_aux:
+            self.visual_proj = nn.Sequential(
+                nn.Linear(stream_out_dim, refine_out_dim),
+                nn.LayerNorm(refine_out_dim),
+            )
 
         self._init_weights()
 
@@ -259,33 +273,41 @@ class SLRModel(nn.Module):
                 nn.init.ones_(m.weight)
                 nn.init.zeros_(m.bias)
 
-    def forward(self, x, input_lengths=None):
+    def forward(self, x, input_lengths=None, return_aux: bool = False):
         """
         Args:
             x:              Tensor[B, T, 77, 3]
-            input_lengths:  Tensor[B]  (unused ở đây, placeholder cho padding mask tương lai)
+            input_lengths:  Tensor[B]  (placeholder, chưa dùng)
+            return_aux:     nếu True và use_aux=True, trả thêm aux log_probs cho VAC loss
 
         Returns:
-            log_probs:          Tensor[B, T, num_classes]  — dùng cho CTCLoss
-            attention_weights:  Tensor[B, T, 5]            — trọng số fusion để debug/visualize
+            return_aux=False:  (log_probs, attn_w)
+            return_aux=True :  (log_probs, attn_w, aux_dict)
         """
         # 1. Encode từng stream
         stream_features = []
         for name, slc, _ in STREAMS:
-            x_s = x[:, :, slc, :]                    # B × T × J × 3
-            h = self.encoders[name](x_s)              # B × T × stream_out_dim
+            x_s = x[:, :, slc, :]
+            h = self.encoders[name](x_s)
             stream_features.append(h)
 
         # 2. Gated fusion
         fused, attn_w = self.fusion(stream_features)  # B × T × stream_out_dim
 
         # 3. Temporal refinement
-        refined, _ = self.refine_gru(fused)           # B × T × (refine_hidden*2)
+        refined, _ = self.refine_gru(fused)           # B × T × refine_out_dim
         refined = self.refine_norm(refined)
 
-        # 4. CTC head
-        logits = self.ctc_head(self.dropout(refined)) # B × T × num_classes
+        # 4. Main CTC head
+        logits = self.ctc_head(self.dropout(refined))
         log_probs = F.log_softmax(logits, dim=-1)
+
+        # 5. VAC aux head — share classifier weights với main head
+        if return_aux and self.use_aux:
+            v_proj = self.visual_proj(fused)                       # B × T × refine_out_dim
+            aux_logits = self.ctc_head(self.dropout(v_proj))       # SAME ctc_head
+            aux_log_probs = F.log_softmax(aux_logits, dim=-1)
+            return log_probs, attn_w, {'visual': aux_log_probs}
 
         return log_probs, attn_w
 

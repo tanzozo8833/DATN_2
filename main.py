@@ -90,12 +90,13 @@ def main():
     # ------------------------------------------------------------------ #
     tcfg = cfg['training']
     train_config = {
-        'device':       device,
-        'lr':           tcfg['lr'],
-        'epochs':       tcfg['epochs'],
-        'weight_decay': tcfg['weight_decay'],
-        'ctc_blank_id': tcfg['ctc_blank_id'],
-        'clip_grad':    tcfg['clip_grad'],
+        'device':          device,
+        'lr':              tcfg['lr'],
+        'epochs':          tcfg['epochs'],
+        'weight_decay':    tcfg['weight_decay'],
+        'ctc_blank_id':    tcfg['ctc_blank_id'],
+        'clip_grad':       tcfg['clip_grad'],
+        'aux_loss_weight': tcfg.get('aux_loss_weight', 1.0),
     }
 
     trainer = Trainer(model, train_loader, dev_loader, train_config, ids2gloss)
@@ -113,11 +114,12 @@ def main():
         train_loss = trainer.train_epoch(epoch)
         val_loss, wer = trainer.validate(epoch)
 
+        main_l = getattr(trainer, 'last_train_main', train_loss)
+        aux_l  = getattr(trainer, 'last_train_aux', 0.0)
         print(
             f'Epoch {epoch:3d}/{tcfg["epochs"]} | '
-            f'Train Loss: {train_loss:.4f} | '
-            f'Val Loss: {val_loss:.4f} | '
-            f'WER: {wer:.4f}'
+            f'main {main_l:.4f} | aux {aux_l:.4f} | '
+            f'Val Loss: {val_loss:.4f} | WER: {wer:.4f}'
         )
 
         if wer < best_wer:

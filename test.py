@@ -129,6 +129,7 @@ def main():
         refine_hidden=mcfg['refine_hidden'],
         dropout=mcfg['dropout'],
         use_velocity=mcfg.get('use_velocity', True),
+        use_aux=mcfg.get('use_aux', True),
     ).to(device)
     print(f'[*] Model params: {model.count_parameters():,}')
 

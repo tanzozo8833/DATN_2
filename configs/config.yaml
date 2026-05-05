@@ -31,7 +31,8 @@ training:
   weight_decay: 1.0e-4
   ctc_blank_id: 0      # '<s>' dùng làm CTC blank
   clip_grad: 5.0
+  aux_loss_weight: 1.0   # VAC Visual Enhancement weight (0.0 = tắt aux)
   save_dir: weights/
   log_wandb: false
   project_name: slr-cslr
-  run_name: 5stream-gated-ctc
+  run_name: 5stream-velocity-vac
