@@ -77,7 +77,7 @@ def main():
         embed_dim=mcfg['embed_dim'],
         tcn_channels=mcfg['tcn_channels'],
         tcn_kernel=mcfg['tcn_kernel'],
-        tcn_layers=mcfg['tcn_layers'],
+        tcn_dilations=mcfg['tcn_dilations'],
         gru_hidden=mcfg['gru_hidden'],
         refine_hidden=mcfg['refine_hidden'],
         dropout=mcfg['dropout'],
@@ -96,7 +96,7 @@ def main():
         'weight_decay':    tcfg['weight_decay'],
         'ctc_blank_id':    tcfg['ctc_blank_id'],
         'clip_grad':       tcfg['clip_grad'],
-        'aux_loss_weight': tcfg.get('aux_loss_weight', 1.0),
+        'aux_weights':     tcfg.get('aux_weights', {}),
     }
 
     trainer = Trainer(model, train_loader, dev_loader, train_config, ids2gloss)

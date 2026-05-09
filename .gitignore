@@ -49,3 +49,8 @@ Kết quả Epoch.txt
 MSKA.pdf
 
 *.txt
+
+*.pptx
+make_datn_slides.py
+make_slides.py
+measure_speed.py

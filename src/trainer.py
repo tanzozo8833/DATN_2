@@ -27,7 +27,9 @@ class Trainer:
 
         self.blank_id   = config.get('ctc_blank_id', 0)
         self.clip_grad  = config.get('clip_grad', 5.0)
-        self.aux_weight = config.get('aux_loss_weight', 1.0)
+        # Per-aux weights: dict {key → weight}. Aux key nào không có trong dict
+        # thì coi weight = 0 (an toàn khi config thiếu hoặc model trả thừa key).
+        self.aux_weights = config.get('aux_weights', {})
 
         self.optimizer = AdamW(
             model.parameters(),
@@ -82,15 +84,17 @@ class Trainer:
             main_loss = self._ctc(log_probs, labels, input_lens, target_lens)
 
             if aux:
-                aux_losses = [
-                    self._ctc(lp, labels, input_lens, target_lens)
-                    for lp in aux.values()
-                ]
-                aux_total = torch.stack(aux_losses).mean()
+                aux_total = torch.tensor(0.0, device=self.device)
+                for k, lp in aux.items():
+                    w = self.aux_weights.get(k, 0.0)
+                    if w > 0:
+                        aux_total = aux_total + w * self._ctc(
+                            lp, labels, input_lens, target_lens,
+                        )
             else:
                 aux_total = torch.tensor(0.0, device=self.device)
 
-            loss = main_loss + self.aux_weight * aux_total
+            loss = main_loss + aux_total
             loss.backward()
 
             nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad)

@@ -46,12 +46,15 @@ def compute_velocity(x: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 
 class _DepthwiseSepConv1d(nn.Module):
-    """Depthwise separable Conv1d: nhẹ hơn full conv ~8-9x."""
+    """Depthwise separable Conv1d với dilation; nhẹ hơn full conv ~8-9x."""
 
-    def __init__(self, channels: int, kernel_size: int):
+    def __init__(self, channels: int, kernel_size: int, dilation: int = 1):
         super().__init__()
-        pad = kernel_size // 2
-        self.dw = nn.Conv1d(channels, channels, kernel_size, padding=pad, groups=channels)
+        pad = dilation * (kernel_size - 1) // 2     # giữ nguyên T
+        self.dw = nn.Conv1d(
+            channels, channels, kernel_size,
+            padding=pad, dilation=dilation, groups=channels,
+        )
         self.pw = nn.Conv1d(channels, channels, 1)
         self.norm = nn.BatchNorm1d(channels)
 
@@ -61,19 +64,31 @@ class _DepthwiseSepConv1d(nn.Module):
 
 class _TCNBlock(nn.Module):
     """
-    Temporal Convolutional Network block.
-    in_ch → out_ch qua n_layers conv depthwise-separable với residual.
+    Dilated Temporal Convolutional Network block (WaveNet-style).
+
+    Stack N depthwise-separable convs với dilation tăng dần → receptive
+    field tăng theo cấp số nhân: với kernel=3 và dilations=[1,2,4]
+    thì receptive = 15.
+
+    Residual: GELU( net(x) + skip(x) ).
     """
 
-    def __init__(self, in_ch: int, out_ch: int, kernel_size: int, n_layers: int, dropout: float):
+    def __init__(
+        self,
+        in_ch: int,
+        out_ch: int,
+        kernel_size: int,
+        dilations: list,
+        dropout: float,
+    ):
         super().__init__()
         layers = []
-        for i in range(n_layers):
+        for i, d in enumerate(dilations):
             ch_in = in_ch if i == 0 else out_ch
             if ch_in != out_ch:
                 layers.append(nn.Conv1d(ch_in, out_ch, 1))  # adapt channels
-            layers.append(_DepthwiseSepConv1d(out_ch, kernel_size))
-            if i < n_layers - 1:
+            layers.append(_DepthwiseSepConv1d(out_ch, kernel_size, dilation=d))
+            if i < len(dilations) - 1:
                 layers.append(nn.Dropout(dropout))
         self.net = nn.Sequential(*layers)
         self.skip = nn.Conv1d(in_ch, out_ch, 1) if in_ch != out_ch else nn.Identity()
@@ -101,7 +116,7 @@ class StreamEncoder(nn.Module):
         embed_dim: int,
         tcn_channels: int,
         tcn_kernel: int,
-        tcn_layers: int,
+        tcn_dilations: list,
         gru_hidden: int,
         dropout: float,
         use_velocity: bool = True,
@@ -118,7 +133,10 @@ class StreamEncoder(nn.Module):
             nn.Dropout(dropout),
         )
 
-        self.tcn = _TCNBlock(embed_dim, tcn_channels, tcn_kernel, tcn_layers, dropout)
+        self.tcn = _TCNBlock(
+            embed_dim, tcn_channels, tcn_kernel,
+            dilations=tcn_dilations, dropout=dropout,
+        )
 
         self.gru = nn.GRU(
             tcn_channels,
@@ -201,7 +219,7 @@ class SLRModel(nn.Module):
         embed_dim: int = 128,
         tcn_channels: int = 128,
         tcn_kernel: int = 3,
-        tcn_layers: int = 2,
+        tcn_dilations: list = (1, 2, 4),
         gru_hidden: int = 64,
         refine_hidden: int = 128,
         dropout: float = 0.3,
@@ -222,7 +240,7 @@ class SLRModel(nn.Module):
                 embed_dim=embed_dim,
                 tcn_channels=tcn_channels,
                 tcn_kernel=tcn_kernel,
-                tcn_layers=tcn_layers,
+                tcn_dilations=list(tcn_dilations),
                 gru_hidden=gru_hidden,
                 dropout=dropout,
                 use_velocity=use_velocity,
@@ -261,6 +279,19 @@ class SLRModel(nn.Module):
                 nn.LayerNorm(refine_out_dim),
             )
 
+        # ---------- 6. Per-stream aux heads cho 3 modality chính (LH > RH > mouth)
+        # Mỗi stream tự học gloss prediction → deep supervision, ép encoder mạnh hơn
+        # thay vì chỉ dựa vào fusion. Share ctc_head với main.
+        self.aux_stream_keys = ['left_hand', 'right_hand', 'mouth']
+        if use_aux:
+            self.stream_proj = nn.ModuleDict({
+                k: nn.Sequential(
+                    nn.Linear(stream_out_dim, refine_out_dim),
+                    nn.LayerNorm(refine_out_dim),
+                )
+                for k in self.aux_stream_keys
+            })
+
         self._init_weights()
 
     def _init_weights(self):
@@ -286,10 +317,12 @@ class SLRModel(nn.Module):
         """
         # 1. Encode từng stream
         stream_features = []
+        stream_dict = {}
         for name, slc, _ in STREAMS:
             x_s = x[:, :, slc, :]
             h = self.encoders[name](x_s)
             stream_features.append(h)
+            stream_dict[name] = h
 
         # 2. Gated fusion
         fused, attn_w = self.fusion(stream_features)  # B × T × stream_out_dim
@@ -302,12 +335,24 @@ class SLRModel(nn.Module):
         logits = self.ctc_head(self.dropout(refined))
         log_probs = F.log_softmax(logits, dim=-1)
 
-        # 5. VAC aux head — share classifier weights với main head
+        # 5. Aux heads — đều share classifier weights với main head
         if return_aux and self.use_aux:
-            v_proj = self.visual_proj(fused)                       # B × T × refine_out_dim
-            aux_logits = self.ctc_head(self.dropout(v_proj))       # SAME ctc_head
-            aux_log_probs = F.log_softmax(aux_logits, dim=-1)
-            return log_probs, attn_w, {'visual': aux_log_probs}
+            aux_dict = {}
+
+            # 5a. VAC Visual Enhancement (fused → ctc_head)
+            v_proj = self.visual_proj(fused)
+            aux_dict['visual'] = F.log_softmax(
+                self.ctc_head(self.dropout(v_proj)), dim=-1,
+            )
+
+            # 5b. Per-stream aux cho LH, RH, mouth
+            for k in self.aux_stream_keys:
+                s_proj = self.stream_proj[k](stream_dict[k])
+                aux_dict[k] = F.log_softmax(
+                    self.ctc_head(self.dropout(s_proj)), dim=-1,
+                )
+
+            return log_probs, attn_w, aux_dict
 
         return log_probs, attn_w
 

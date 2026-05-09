@@ -15,12 +15,12 @@ data:
     face:       {start: 63, end: 77, n_joints: 14}  # 14 điểm mặt
 
 model:
-  embed_dim: 128      # Chiều embedding đầu ra của linear projection mỗi stream
-  tcn_channels: 128   # Số kênh TCN
-  tcn_kernel: 3       # Kernel size TCN
-  tcn_layers: 2       # Số lớp TCN
-  gru_hidden: 64      # Hidden size GRU mỗi chiều (output = 128 do bidirectional)
-  refine_hidden: 128  # Hidden size GRU temporal refinement (output = 256)
+  embed_dim: 128            # Chiều embedding đầu ra của linear projection mỗi stream
+  tcn_channels: 128         # Số kênh TCN
+  tcn_kernel: 3             # Kernel size TCN
+  tcn_dilations: [1, 2, 4]  # Dilated TCN — receptive field 15 frames (~0.6s @25fps)
+  gru_hidden: 64            # Hidden size GRU mỗi chiều (output = 128 do bidirectional)
+  refine_hidden: 128        # Hidden size GRU temporal refinement (output = 256)
   dropout: 0.3
 
 training:
@@ -31,7 +31,16 @@ training:
   weight_decay: 1.0e-4
   ctc_blank_id: 0      # '<s>' dùng làm CTC blank
   clip_grad: 5.0
-  aux_loss_weight: 1.0   # VAC Visual Enhancement weight (0.0 = tắt aux)
+  # Per-aux weights — main loss luôn = 1.0
+  # visual    : VAC Visual Enhancement (fused features)
+  # left_hand : per-stream aux (cử chỉ chính #1)
+  # right_hand: per-stream aux (cử chỉ chính #2)
+  # mouth     : per-stream aux (mouthing — gloss thứ 3 quan trọng)
+  aux_weights:
+    visual: 1.0
+    left_hand: 0.3
+    right_hand: 0.3
+    mouth: 0.2
   save_dir: weights/
   log_wandb: false
   project_name: slr-cslr

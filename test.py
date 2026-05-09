@@ -124,7 +124,7 @@ def main():
         embed_dim=mcfg['embed_dim'],
         tcn_channels=mcfg['tcn_channels'],
         tcn_kernel=mcfg['tcn_kernel'],
-        tcn_layers=mcfg['tcn_layers'],
+        tcn_dilations=mcfg['tcn_dilations'],
         gru_hidden=mcfg['gru_hidden'],
         refine_hidden=mcfg['refine_hidden'],
         dropout=mcfg['dropout'],
