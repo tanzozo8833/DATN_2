@@ -42,8 +42,9 @@ training:
     left_hand: 0.3
     right_hand: 0.3
     mouth: 0.2
-  # CTC label smoothing (Liu 2018) — 0.1 thường tốt cho seq tasks
-  label_smoothing: 0.1
+  # CTC label smoothing — TẮT (formulation cũ phá CTC khi distribution peaky;
+  # smooth term grow vô hạn vì non-target log p → -∞, áp đảo CTC ở late epoch).
+  label_smoothing: 0.0
   # EMA decay — 0.999 = window ~1000 batches (~2 epoch ở batch=16)
   ema_decay: 0.999
   save_dir: weights/
