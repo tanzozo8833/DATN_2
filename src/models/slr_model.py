@@ -222,6 +222,7 @@ class SLRModel(nn.Module):
         tcn_dilations: list = (1, 2, 4),
         gru_hidden: int = 64,
         refine_hidden: int = 128,
+        refine_layers: int = 1,
         dropout: float = 0.3,
         use_velocity: bool = True,
         use_aux: bool = True,
@@ -256,12 +257,15 @@ class SLRModel(nn.Module):
         )
 
         # ---------- 3. Temporal refinement ----------
+        # num_layers > 1 để mở rộng global context. Dropout giữa các layer của
+        # PyTorch GRU chỉ active khi num_layers > 1.
         self.refine_gru = nn.GRU(
             stream_out_dim,
             refine_hidden,
-            num_layers=1,
+            num_layers=refine_layers,
             batch_first=True,
             bidirectional=True,
+            dropout=dropout if refine_layers > 1 else 0.0,
         )
         self.refine_norm = nn.LayerNorm(refine_out_dim)
 

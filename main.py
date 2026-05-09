@@ -80,6 +80,7 @@ def main():
         tcn_dilations=mcfg['tcn_dilations'],
         gru_hidden=mcfg['gru_hidden'],
         refine_hidden=mcfg['refine_hidden'],
+        refine_layers=mcfg.get('refine_layers', 1),
         dropout=mcfg['dropout'],
     )
     n_params = model.count_parameters()
@@ -97,6 +98,8 @@ def main():
         'ctc_blank_id':    tcfg['ctc_blank_id'],
         'clip_grad':       tcfg['clip_grad'],
         'aux_weights':     tcfg.get('aux_weights', {}),
+        'label_smoothing': tcfg.get('label_smoothing', 0.0),
+        'ema_decay':       tcfg.get('ema_decay', 0.0),
     }
 
     trainer = Trainer(model, train_loader, dev_loader, train_config, ids2gloss)

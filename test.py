@@ -127,6 +127,7 @@ def main():
         tcn_dilations=mcfg['tcn_dilations'],
         gru_hidden=mcfg['gru_hidden'],
         refine_hidden=mcfg['refine_hidden'],
+        refine_layers=mcfg.get('refine_layers', 1),
         dropout=mcfg['dropout'],
         use_velocity=mcfg.get('use_velocity', True),
         use_aux=mcfg.get('use_aux', True),

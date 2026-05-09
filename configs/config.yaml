@@ -18,9 +18,10 @@ model:
   embed_dim: 128            # Chiều embedding đầu ra của linear projection mỗi stream
   tcn_channels: 128         # Số kênh TCN
   tcn_kernel: 3             # Kernel size TCN
-  tcn_dilations: [1, 2, 4]  # Dilated TCN — receptive field 15 frames (~0.6s @25fps)
+  tcn_dilations: [1, 2, 4, 8]  # Dilated TCN — receptive field 31 frames (~1.2s @25fps)
   gru_hidden: 64            # Hidden size GRU mỗi chiều (output = 128 do bidirectional)
   refine_hidden: 128        # Hidden size GRU temporal refinement (output = 256)
+  refine_layers: 2          # Num layers BiGRU refinement (deeper temporal context)
   dropout: 0.3
 
 training:
@@ -41,6 +42,10 @@ training:
     left_hand: 0.3
     right_hand: 0.3
     mouth: 0.2
+  # CTC label smoothing (Liu 2018) — 0.1 thường tốt cho seq tasks
+  label_smoothing: 0.1
+  # EMA decay — 0.999 = window ~1000 batches (~2 epoch ở batch=16)
+  ema_decay: 0.999
   save_dir: weights/
   log_wandb: false
   project_name: slr-cslr
