@@ -45,8 +45,9 @@ training:
   # CTC label smoothing — TẮT (formulation cũ phá CTC khi distribution peaky;
   # smooth term grow vô hạn vì non-target log p → -∞, áp đảo CTC ở late epoch).
   label_smoothing: 0.0
-  # EMA decay — 0.999 = window ~1000 batches (~2 epoch ở batch=16)
-  ema_decay: 0.999
+  # EMA decay — TẮT để isolate effect của arch changes (2-layer GRU + dilation 8).
+  # Nếu arch mới đạt ≤35.68 thì arch OK, lúc đó EMA mới được nghi ngờ.
+  ema_decay: 0.0
   save_dir: weights/
   log_wandb: false
   project_name: slr-cslr
