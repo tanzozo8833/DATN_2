@@ -52,3 +52,4 @@ training:
   log_wandb: false
   project_name: slr-cslr
   run_name: 5stream-velocity-vac
+  
