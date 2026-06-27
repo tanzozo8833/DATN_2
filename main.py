@@ -1,3 +1,4 @@
+import argparse
 import yaml
 import pickle
 import torch
@@ -21,7 +22,10 @@ def resolve_device(cfg_device: str) -> str:
 
 
 def main():
-    cfg = load_config('configs/config.yaml')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', default='configs/config.yaml')
+    args = parser.parse_args()
+    cfg = load_config(args.config)
 
     # ------------------------------------------------------------------ #
     # Device

@@ -1,0 +1,44 @@
+data:
+  train_path: data/processed/Phoenix-2014/train_77.pkl
+  dev_path: data/processed/Phoenix-2014/dev_77.pkl
+  test_path: data/processed/Phoenix-2014/test_77.pkl
+  dict_path: data/processed/Phoenix-2014/gloss2ids.pkl
+  num_workers: 4
+
+  # 77 điểm được sắp xếp theo thứ tự: Body → Left Hand → Right Hand → Mouth → Face
+  streams:
+    pose:       {start: 0,  end: 9,  n_joints: 9}
+    left_hand:  {start: 9,  end: 30, n_joints: 21}
+    right_hand: {start: 30, end: 51, n_joints: 21}
+    mouth:      {start: 51, end: 63, n_joints: 12}
+    face:       {start: 63, end: 77, n_joints: 14}
+
+model:
+  embed_dim: 128
+  tcn_channels: 128
+  tcn_kernel: 3
+  tcn_dilations: [1, 2, 4, 8]
+  gru_hidden: 64
+  refine_hidden: 128
+  refine_layers: 2
+  dropout: 0.3
+
+training:
+  device: auto
+  lr: 1.0e-3
+  epochs: 200
+  batch_size: 16
+  weight_decay: 1.0e-4
+  ctc_blank_id: 0
+  clip_grad: 5.0
+  aux_weights:
+    visual: 1.0
+    left_hand: 0.3
+    right_hand: 0.3
+    mouth: 0.2
+  label_smoothing: 0.0
+  ema_decay: 0.0
+  save_dir: weights/phoenix2014/
+  log_wandb: false
+  project_name: slr-cslr
+  run_name: 5stream-phoenix2014
